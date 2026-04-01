@@ -1,0 +1,19 @@
+{
+  "name": "bloggar",
+  "version": "1.0.0",
+  "description": "Multi-user blog api with roles",
+  "license": "ISC",
+  "author": "Olawale",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.3"
+  }
+}
