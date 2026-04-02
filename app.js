@@ -8,7 +8,8 @@ const app=express();
 const PORT=process.env.PORT||4000;
 const bcrypt=require('bcrypt');
 const Schema=mongoose.Schema;
-const ADMIN_SECERT=process.env.adminsecret;
+const ADMIN_SECERT=process.env.ADMIN_SECERT;
+const JWT_SECERT=process.env.JWT_SECERT;
 
 const userschema=new Schema({
     username:{type: String, required: true , Unique: true},
@@ -63,9 +64,47 @@ if(adminsecret){
 const encryptedpassword=await bcrypt.hash(password,10)
 
 await User.create({username:validatename,password:encryptedpassword,role:role,isAdmin});
-res.json({message:isAdmin? "Admin created Successfully" : " User Created Successfully"})
+let token;
+if(isAdmin){
+token=jwt.sign({username},ADMIN_SECERT)
+}
+else{
+  token=jwt.sign({username},JWT_SECERT)  
+}
+
+res.json({message:isAdmin? "Admin created Successfully" : " User Created Successfully",token})
 } catch (error) {
     console.log(error)
+}
+})
+
+app.post('/login',async (req,res)=>{
+try {
+    const {username,password}=req.body;
+const validatename=username.trim().toLowerCase();
+
+const user=await User.findOne({username:validatename});
+
+if(!validatename || !password){
+    return res.status(400).json({message:"All params must be valid"})
+}
+
+if(!user) return res.status(400).json({message:"User doesn't exist"});
+
+const compare=await bcrypt.compare(password,user.password);
+if(!compare) res.status(400).json({message:"Invalid credientials"});
+
+let token;
+if(user.isAdmin) {
+    token=jwt.sign({username},ADMIN_SECERT)
+}
+else {
+    token=jwt.sign({username},JWT_SECERT);
+}
+
+res.json({message:`Welcome back! ${username}`,token})
+} catch (err) {
+    console.error(err)
 }
 })
 
