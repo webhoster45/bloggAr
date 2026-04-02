@@ -7,6 +7,8 @@ const jwt=require('jsonwebtoken');
 const app=express();
 const PORT=process.env.PORT||4000;
 const bcrypt=require('bcrypt');
+const { verify } = require('crypto');
+const { type } = require('os');
 const Schema=mongoose.Schema;
 const ADMIN_SECERT=process.env.ADMIN_SECERT;
 const JWT_SECERT=process.env.JWT_SECERT;
@@ -19,7 +21,15 @@ const userschema=new Schema({
     isAdmin: {type: Boolean, default: false}
 },{timestamps:true})
 
-const User=mongoose.model("User",userschema)
+
+const postschema=new Schema({
+    authorid:{type: mongoose.Schema.Types.ObjectId,ref: "User" },
+    post:{type: String, required: true },
+    likes:{ type : String , default:0}
+},{timestamps:true})
+
+const User=mongoose.model("User",userschema);
+const Post=mongoose.model("Post",postschema)
 
 app.use(express.json())
 app.use(express.urlencoded({extended:true}));
@@ -27,6 +37,19 @@ app.use(express.urlencoded({extended:true}));
 mongoose.connect(process.env.MONGODB_URL)
 .then(()=>{console.log("Mongodb connected"),app.listen(PORT,()=>{console.log(`Listening for requests at PORT:${PORT}`)})})
 .catch(err=>console.error('Mongodb url:',err))
+
+function authmiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.sendStatus(401);
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, JWT_SECERT, (err, decoded) => {
+    if (err) return res.sendStatus(403);
+    req.user = decoded;
+    console.log(decoded)
+    console.log("------------------------------------------------")
+    next();
+  });
+}
 
 
 app.post('/register',async (req,res)=>{
@@ -66,10 +89,10 @@ const encryptedpassword=await bcrypt.hash(password,10)
 await User.create({username:validatename,password:encryptedpassword,role:role,isAdmin});
 let token;
 if(isAdmin){
-token=jwt.sign({username},ADMIN_SECERT)
+token=jwt.sign({id:await User.findOne(validatename)._id,username:validatename},ADMIN_SECERT)
 }
 else{
-  token=jwt.sign({username},JWT_SECERT)  
+  token=jwt.sign( {id:await User.findOne(validatename)._id,username:validatename},JWT_SECERT)  
 }
 
 res.json({message:isAdmin? "Admin created Successfully" : " User Created Successfully",token})
@@ -96,15 +119,37 @@ if(!compare) res.status(400).json({message:"Invalid credientials"});
 
 let token;
 if(user.isAdmin) {
-    token=jwt.sign({username},ADMIN_SECERT)
+    token=jwt.sign({id:user._id,username:user.username},ADMIN_SECERT)
 }
 else {
-    token=jwt.sign({username},JWT_SECERT);
+    token=jwt.sign({id:user._id,username:user.username},JWT_SECERT);
 }
 
 res.json({message:`Welcome back! ${username}`,token})
 } catch (err) {
     console.error(err)
+}
+})
+
+app.get('/posts',authmiddleware,(req,res)=>{
+res.json({message:"route working"})
+})
+
+app.post('/author/create',authmiddleware,async (req,res)=>{
+    const {content}=req.body
+    console.log(req.user)
+  const user=await User.findById(req.user.id);
+//   console.log(user)
+console.log(user)
+if(user.role =="Author"){ 
+await Post.create({post:content})
+}
+else if(user.isAdmin){
+    await Post.create({post:content})
+}
+else{
+    console.log(user.role); res.status(400).json({message:"Only Authors & Admin can create posts"})
+
 }
 })
 
