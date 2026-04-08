@@ -25,6 +25,7 @@ const userschema=new Schema({
 const postschema=new Schema({
     authorid:{type: mongoose.Schema.Types.ObjectId,ref: "User" },
     post:{type: String, required: true },
+    by:{type:String , required : true},
     likes:{ type : String , default:0}
 },{timestamps:true})
 
@@ -131,27 +132,71 @@ res.json({message:`Welcome back! ${username}`,token})
 }
 })
 
-app.get('/posts',authmiddleware,(req,res)=>{
-res.json({message:"route working"})
+//------------------------------UNTESTED ROUTES----------------------------------
+
+
+app.get('/posts',authmiddleware,async (req,res)=>{
+const posts=await Post.find();
+// posts.foreach(post=>{
+
+//     const each={
+//     authorname:post.authorname,
+//     post:post.post,
+//     likes:post.likes,
+//     iat:post.iat
+// }
+// allposts.push(each)
+
+// })
+
+
+res.json({posts})
+
+res.status(500).json({message:"error"})
+
 })
 
 app.post('/author/create',authmiddleware,async (req,res)=>{
-    const {content}=req.body
-    console.log(req.user)
+ try {
+  const {content}=req.body
+  console.log(req.user)
   const user=await User.findById(req.user.id);
 //   console.log(user)
-console.log(user)
-if(user.role =="Author"){ 
-await Post.create({post:content})
-}
-else if(user.isAdmin){
-    await Post.create({post:content})
+  console.log(user)
+  if(user.role =="Author"){ 
+    await Post.create({post:content,by:req.user.username})
+  }
+  else if(user.isAdmin){
+    await Post.create({post:content,by:req.user.username})
 }
 else{
     console.log(user.role); res.status(400).json({message:"Only Authors & Admin can create posts"})
 
 }
+    } catch (err) {
+        console.error(err)
+    }
 })
+
+app.post("/posts/:authorid",authmiddleware,async (req,res)=>{
+try{
+const id=req.params.id;
+const post= await Post.findById({id});
+res.json({post})
+}catch(err){
+    console.error(err)
+}
+})
+
+app.post("/comment/:id",authmiddleware,async (req,res)=>{
+try {
+    const postid=req.params.id;
+    
+} catch (error) {
+    console.error(err)
+}
+})
+
 
 // bcrypt.hash("olawale", 10, (err,hash)=>{
 //     console.log(hash)
