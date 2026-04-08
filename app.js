@@ -23,7 +23,7 @@ const userschema=new Schema({
 
 
 const postschema=new Schema({
-    authorid:{type: mongoose.Schema.Types.ObjectId,ref: "User" },
+    authorid:{type:String, required : true},
     post:{type: String, required: true },
     by:{type:String , required : true},
     likes:{ type : String , default:0}
@@ -164,17 +164,20 @@ app.post('/author/create',authmiddleware,async (req,res)=>{
 //   console.log(user)
   console.log(user)
   if(user.role =="Author"){ 
-    await Post.create({post:content,by:req.user.username})
+    await Post.create({authorid:req.user.id,post:content,by:req.user.username})
+    return res.status(201).json({message:"Post created successfully"})
   }
-  else if(user.isAdmin){
-    await Post.create({post:content,by:req.user.username})
-}
+//   else if(user.isAdmin){
+//     await Post.create({authorid:req.user.id,post:content,by:req.user.username})
+//     return res.status(201).json({message:"Post created successfully"})
+// }
 else{
     console.log(user.role); res.status(400).json({message:"Only Authors & Admin can create posts"})
 
 }
     } catch (err) {
         console.error(err)
+        return res.status(500).send("Error")
     }
 })
 
