@@ -136,6 +136,7 @@ res.json({message:`Welcome back! ${username}`,token})
 
 
 app.get('/posts',authmiddleware,async (req,res)=>{
+try{
 const posts=await Post.find();
 // posts.foreach(post=>{
 
@@ -151,8 +152,12 @@ const posts=await Post.find();
 
 
 res.json({posts})
-
 res.status(500).json({message:"error"})
+}
+catch(err){
+    console.log(err)
+}
+
 
 })
 
