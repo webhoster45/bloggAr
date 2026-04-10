@@ -29,6 +29,12 @@ const postschema=new Schema({
     likes:{ type : String , default:0}
 },{timestamps:true})
 
+const commentschema= new Schema({
+    postid:{type: String , required : true },
+    comment:{type : String ,required : true},
+    by:{type : String, required: true }
+})
+
 const User=mongoose.model("User",userschema);
 const Post=mongoose.model("Post",postschema)
 
@@ -132,27 +138,13 @@ res.json({message:`Welcome back! ${username}`,token})
 }
 })
 
-//------------------------------UNTESTED ROUTES----------------------------------
-
 
 app.get('/posts',authmiddleware,async (req,res)=>{
 try{
 const posts=await Post.find();
-// posts.foreach(post=>{
-
-//     const each={
-//     authorname:post.authorname,
-//     post:post.post,
-//     likes:post.likes,
-//     iat:post.iat
-// }
-// allposts.push(each)
-
-// })
-
 
 res.json({posts})
-res.status(500).json({message:"error"})
+// res.status(500).json({message:"error"})
 }
 catch(err){
     console.log(err)
@@ -188,13 +180,18 @@ else{
 
 app.post("/posts/:authorid",authmiddleware,async (req,res)=>{
 try{
-const id=req.params.id;
-const post= await Post.findById({id});
+const authorid=req.params.authorid;
+console.log(authorid)
+const post= await Post.find({authorid})
 res.json({post})
 }catch(err){
     console.error(err)
+    res.status(500).json({message:"server error"})
 }
 })
+
+//------------------------------UNTESTED ROUTES----------------------------------
+
 
 app.post("/comment/:id",authmiddleware,async (req,res)=>{
 try {
