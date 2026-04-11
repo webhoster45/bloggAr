@@ -46,17 +46,37 @@ mongoose.connect(process.env.MONGODB_URL)
 .catch(err=>console.error('Mongodb url:',err))
 
 function authmiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
+ try {
+     const authHeader = req.headers.authorization;
   if (!authHeader) return res.sendStatus(401);
   const token = authHeader.split(' ')[1];
   jwt.verify(token, JWT_SECERT, (err, decoded) => {
-    if (err) return res.sendStatus(403);
+ if(err){
+    jwt.verify(token,ADMIN_SECERT,(err,decoded)=>{
+       if(err) return res.status(403).json({message:err});
+       else{
+        req.user=decoded;
+         console.log("------------------------admin begin------------------------")
+         console.log(decoded);
+         console.log("------------------------admin over------------------------")
+         return next();
+       }
+})
+
+ }
+ else{
     req.user = decoded;
+    console.log("----------------------user begin--------------------------")
     console.log(decoded)
-    console.log("------------------------------------------------")
-    next();
-  });
-}
+    console.log("----------------------user over--------------------------")
+    return next();
+ }
+ })} catch (err) {
+return res.status(403).json({message:"Invalid token"})
+ }
+};
+
+
 
 
 app.post('/register',async (req,res)=>{
@@ -81,6 +101,7 @@ let isAdmin=false;
 if(adminsecret){
     const existingadmin=await User.findOne({isAdmin:true})
     if(adminsecret!=ADMIN_SECERT){
+        console.log(adminsecret)
         return res.status(403).json({message:"invalid admin secret"})
     }
 
@@ -95,11 +116,12 @@ const encryptedpassword=await bcrypt.hash(password,10)
 
 await User.create({username:validatename,password:encryptedpassword,role:role,isAdmin});
 let token;
+const userid=await User.findOne({username:validatename})._id
 if(isAdmin){
-token=jwt.sign({id:await User.findOne(validatename)._id,username:validatename},ADMIN_SECERT)
+token=jwt.sign({id:userid,username:validatename},ADMIN_SECERT)
 }
 else{
-  token=jwt.sign( {id:await User.findOne(validatename)._id,username:validatename},JWT_SECERT)  
+  token=jwt.sign( {id:userid,username:validatename},JWT_SECERT)  
 }
 
 res.json({message:isAdmin? "Admin created Successfully" : " User Created Successfully",token})
@@ -141,13 +163,15 @@ res.json({message:`Welcome back! ${username}`,token})
 
 app.get('/posts',authmiddleware,async (req,res)=>{
 try{
+console.log("Reached here")
 const posts=await Post.find();
 
 res.json({posts})
 // res.status(500).json({message:"error"})
 }
 catch(err){
-    console.log(err)
+    return res.status(500).json({message:err})
+    // console.log(err)
 }
 
 
@@ -157,17 +181,26 @@ app.post('/author/create',authmiddleware,async (req,res)=>{
  try {
   const {content}=req.body
   console.log(req.user)
+//   if(!req.user.id){
+
+//   }
   const user=await User.findById(req.user.id);
-//   console.log(user)
+console.log("-----------------------------")
+console.log(req.user)
   console.log(user)
-  if(user.role =="Author"){ 
-    await Post.create({authorid:req.user.id,post:content,by:req.user.username})
+  const userbyname=await User.findOne({username:req.user.username})
+  console.log(userbyname)
+  if(!req.user.id){
+    console.log("This is likely a user directed from registered")
+  }
+  if(userbyname.role=="Author"){ 
+    await Post.create({authorid:userbyname.id,post:content,by:req.user.username})
     return res.status(201).json({message:"Post created successfully"})
   }
-//   else if(user.isAdmin){
-//     await Post.create({authorid:req.user.id,post:content,by:req.user.username})
-//     return res.status(201).json({message:"Post created successfully"})
-// }
+  else if(userbyname.isAdmin){
+    await Post.create({authorid:userbyname.id,post:content,by:req.user.username})
+    return res.status(201).json({message:"Post created successfully"})
+}
 else{
     console.log(user.role); res.status(400).json({message:"Only Authors & Admin can create posts"})
 
@@ -201,6 +234,8 @@ try {
     console.error(err)
 }
 })
+
+
 
 
 // bcrypt.hash("olawale", 10, (err,hash)=>{
