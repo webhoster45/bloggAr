@@ -33,10 +33,13 @@ const commentschema= new Schema({
     postid:{type: String , required : true },
     comment:{type : String ,required : true},
     by:{type : String, required: true }
-})
+});
+
 
 const User=mongoose.model("User",userschema);
-const Post=mongoose.model("Post",postschema)
+const Post=mongoose.model("Post",postschema);
+const Comment=mongoose.model("Comment",commentschema);
+
 
 app.use(express.json())
 app.use(express.urlencoded({extended:true}));
@@ -163,7 +166,6 @@ res.json({message:`Welcome back! ${username}`,token})
 
 app.get('/posts',authmiddleware,async (req,res)=>{
 try{
-console.log("Reached here")
 const posts=await Post.find();
 
 res.json({posts})
@@ -202,7 +204,7 @@ console.log(req.user)
     return res.status(201).json({message:"Post created successfully"})
 }
 else{
-    console.log(user.role); res.status(400).json({message:"Only Authors & Admin can create posts"})
+    console.log(userbyname.role); res.status(400).json({message:"Only Authors & Admin can create posts"})
 
 }
     } catch (err) {
@@ -226,11 +228,24 @@ res.json({post})
 //------------------------------UNTESTED ROUTES----------------------------------
 
 
-app.post("/comment/:id",authmiddleware,async (req,res)=>{
+app.post("/reader/comment/:id",authmiddleware,async (req,res)=>{
 try {
     const postid=req.params.id;
-    
-} catch (error) {
+    const {comment}=req.body;
+    if(!postid) return res.status(403).json({message:"You must have a postid"})
+//     const authorid=req.params.authorid;
+// console.log(authorid)
+// const user=await User.find({req.user.username})
+const post= await Post.find({_id:postid})
+if(!post) return res.status(403).json({message:"No post found"})
+// await
+const userondb=await User.findOne({username:req.user.username});
+console.log(userondb)
+if(userondb.role!='reader'&& !userondb.isAdmin) return res.status(403).json({message:"Must either be a reader or admin to access to route"})
+await Comment.create({postid,comment,by:req.user.username})
+res.json({message:"Post created successfully"})
+
+} catch (err) {
     console.error(err)
 }
 })
