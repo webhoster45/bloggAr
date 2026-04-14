@@ -26,7 +26,7 @@ const postschema=new Schema({
     authorid:{type:String, required : true},
     post:{type: String, required: true },
     by:{type:String , required : true},
-    likes:{ type : String , default:0}
+    likes:{ type : Number , default:0}
 },{timestamps:true})
 
 const commentschema= new Schema({
@@ -225,6 +225,18 @@ res.json({post})
 }
 })
 
+app.get("/posts/:postid",authmiddleware,async (req,res)=>{
+    try {
+        const postid=req.params.postid;
+        if(!postid) return res.status(400).json({message:"No post id"});
+        const post= await Post.findOne({postid});
+        if(!post) return res.status(400).json({message:"Post does not exist"})
+        return res.status(200).json({post})
+    } catch (error) {
+        console.log(err)
+    }
+})
+
 //------------------------------UNTESTED ROUTES----------------------------------
 
 
@@ -232,25 +244,66 @@ app.post("/reader/comment/:id",authmiddleware,async (req,res)=>{
 try {
     const postid=req.params.id;
     const {comment}=req.body;
-    if(!postid) return res.status(403).json({message:"You must have a postid"})
+    if(!postid) return res.status(400).json({message:"You must have a postid"})
 //     const authorid=req.params.authorid;
 // console.log(authorid)
 // const user=await User.find({req.user.username})
-const post= await Post.find({_id:postid})
-if(!post) return res.status(403).json({message:"No post found"})
+const post= await Post.findOne({_id:postid})
+if(!post) return res.status(400).json({message:"No post found"})
 // await
 const userondb=await User.findOne({username:req.user.username});
-console.log(userondb)
+console.log(post)
 if(userondb.role!='reader'&& !userondb.isAdmin) return res.status(403).json({message:"Must either be a reader or admin to access to route"})
 await Comment.create({postid,comment,by:req.user.username})
-res.json({message:"Post created successfully"})
+res.json({message:"Comment created successfully"})
 
 } catch (err) {
     console.error(err)
 }
 })
 
+app.get("/reader/comment/:id",authmiddleware,async (req,res)=>{
+try {
+        const postid=req.params.id;
+    if(!postid) return res.status(400).json({message:"You must have a postid"})
+    const comments= await Comment.find({postid})
+    if(!comments) return res.status(403).json({message:"No comment for this post"});
+    return res.status(200).json({comments})
+} catch (error) {
+    console.log(error)
+}
+});
 
+app.delete("/admin/delete/:id",authmiddleware,async (req,res)=>{
+try {
+        const postid=req.params.id;
+    if(!postid) return res.status(400).json({message:"You must have a postid"});
+    const user=await User.findOne({username:req.user.username});
+
+    if(!user.isAdmin) return res.status(403).json({message:"Only admins can delete posts"});
+    const deleteitem=await Post.findByIdAndDelete({_id:postid})
+    return res.status(200).json({message:"Item deleted",deleteitem})
+} catch (error) {
+    console.log(error)
+}
+});
+
+app.post("/like/:id",authmiddleware,async (req,res)=>{
+const postid=req.params.id;
+if(!postid) return res.status(400).json({message:"You must have a postid"});
+        const post= await Post.findOne({_id:postid});
+        console.log(post)
+        if(!post) return res.status(400).json({message:"Post does not exist"});
+       post.likes+=1;
+       const updatedpost=await post.save();
+       return res.status(200).json({updatedpost})
+})
+
+
+
+app.use((req,res)=>{
+   return res.status(404).json({message:"Route not found/you need to be jwt verifed to access routes"})
+})
 
 
 // bcrypt.hash("olawale", 10, (err,hash)=>{
