@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloggar v2 | Auth</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="form2.css">
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg"></div>
+
+<div class="auth-box">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Bloggar</h1>
+    <p>Next Gen Auth System</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button id="loginTab" class="active">Login</button>
+    <button id="registerTab">Register</button>
+  </div>
+
+  <!-- LOGIN -->
+  <form id="loginForm" class="form active">
+    <h2>Login</h2>
+
+    <div class="input-box">
+      <input type="text" id="loginUsername" required>
+      <label>Username</label>
+    </div>
+
+    <div class="input-box">
+      <input type="password" id="loginPassword" required>
+      <label>Password</label>
+    </div>
+
+    <p id="loginError" class="error"></p>
+
+    <button type="submit">Enter</button>
+  </form>
+
+  <!-- REGISTER -->
+  <form id="registerForm" class="form">
+    <h2>Register</h2>
+
+    <div class="input-box">
+      <input type="email" id="email" required>
+      <label>Email</label>
+    </div>
+
+    <div class="input-box">
+      <input type="password" id="password" required>
+      <label>Password</label>
+    </div>
+
+    <div class="input-box">
+      <select id="role" required>
+        <option value="">Select Role</option>
+        <option value="author">Author</option>
+        <option value="reader">Reader</option>
+      </select>
+    </div>
+
+    <div class="input-box">
+      <input type="text" id="adminSecret">
+      <label>Admin Secret</label>
+    </div>
+
+    <p id="registerError" class="error"></p>
+
+    <button type="submit">Create</button>
+  </form>
+
+</div>
+
+<script src="form2.js"></script>
+</body>
+</html>

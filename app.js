@@ -43,6 +43,7 @@ const Comment=mongoose.model("Comment",commentschema);
 
 app.use(express.json())
 app.use(express.urlencoded({extended:true}));
+app.use(express.static('/public'))
 
 mongoose.connect(process.env.MONGODB_URL)
 .then(()=>{console.log("Mongodb connected"),app.listen(PORT,()=>{console.log(`Listening for requests at PORT:${PORT}`)})})
@@ -80,7 +81,10 @@ return res.status(403).json({message:"Invalid token"})
 };
 
 
-
+app.get('/',(req,res)=>{
+    // app.send(path.join(__dirname,'views','index.html'))
+    res.sendFile(path.join(__dirname,'views','form2.html'))
+})
 
 app.post('/register',async (req,res)=>{
 try {
